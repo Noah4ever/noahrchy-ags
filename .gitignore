@@ -1,0 +1,15 @@
+node_modules/
+dist/
+.cache/
+*.log
+*.swp
+*.swo
+*.bak
+.env
+.env.*
+.agscache/
+ags-build/
+.vscode/
+.idea/
+.DS_Store
+@girs

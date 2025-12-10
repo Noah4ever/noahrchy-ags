@@ -1,0 +1,22 @@
+#!/bin/bash
+
+# Detect Wi-Fi device whose mode is "station"
+DEVICE=$(iwctl device list | grep ' station' | awk '{print $2}')
+
+# If no device found → off
+if [ -z "$DEVICE" ]; then
+    echo off
+    exit 0
+fi
+
+# Get the connection state for that device
+STATE=$(iwctl station "$DEVICE" show 2>/dev/null \
+    | awk '/State/ {print $2}' \
+    | tr -d '[:space:]')
+
+# Output final status
+if [ "$STATE" = "connected" ]; then
+    echo on
+else
+    echo off
+fi

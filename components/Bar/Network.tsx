@@ -1,5 +1,4 @@
 import { Gtk } from "ags/gtk4";
-import AstalNetwork from "gi://AstalNetwork";
 import GLib from "gi://GLib";
 
 const ICON_DIR = `${GLib.get_home_dir()}/.config/ags/noahrch/icons`;
@@ -16,37 +15,27 @@ export default function Network() {
         const icon = new Gtk.Image();
         self.set_child(icon);
 
-        const network = AstalNetwork.get_default();
-        let lastWifi: AstalNetwork.Wifi | null = null;
-
         const updateIcon = () => {
           try {
-            const wifi = network.wifi;
-            console.log("Network wifi status:", wifi);
-            console.log("Network: ", network);
-            if (wifi && wifi !== lastWifi) {
-              wifi.connect("notify::active-access-point", updateIcon);
-              lastWifi = wifi;
-            }
+            const [ok, out] = GLib.spawn_command_line_sync(
+              `${GLib.get_home_dir()}/.config/ags/noahrch/scripts/wifi-status`
+            );
 
-            const wifiConnected = !!wifi?.activeAccessPoint;
+            const status =
+              ok && out instanceof Uint8Array
+                ? new TextDecoder().decode(out).trim()
+                : "";
+            const connected = status === "on";
 
-            icon.set_from_file(wifiConnected ? ICON_WIFI : ICON_WIFI_OFF);
+            icon.set_from_file(connected ? ICON_WIFI : ICON_WIFI_OFF);
             self.set_tooltip_text(
-              wifiConnected ? "Wi-Fi connected" : "Wi-Fi disconnected"
+              connected ? "Wi-Fi connected" : "Wi-Fi not connected"
             );
           } catch (err) {
-            console.error("network icon update failed", err);
             icon.set_from_file(ICON_WIFI_OFF);
-            self.set_tooltip_text("Wi-Fi status unknown");
+            self.set_tooltip_text("Unknown");
           }
         };
-
-        network.connect("notify::wifi", () => {
-          lastWifi = null;
-          updateIcon();
-        });
-        network.connect("notify::active-connections", updateIcon);
 
         GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 3, () => {
           updateIcon();

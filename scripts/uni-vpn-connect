@@ -1,0 +1,68 @@
+#!/bin/bash
+set -euo pipefail
+
+# Colors
+GREEN="\e[32m"
+RED="\e[31m"
+RESET="\e[0m"
+
+GATEWAY="https://vpn.uni-bremen.de"
+AUTHGROUP="Tunnel-All-Traffic"
+
+# -------------------------------------------------------
+# ARGUMENT HANDLING
+# -------------------------------------------------------
+if [[ $# -ne 2 ]]; then
+  echo -e "${RED}Usage:${RESET} $0 <username> <password-file>"
+  echo "Example: $0 yourusername ~/.openconnect/yourusername.pw"
+  exit 1
+fi
+
+USERNAME="$1"
+PASS_FILE="$2"
+
+# -------------------------------------------------------
+# AUTO SUDO
+# -------------------------------------------------------
+if [[ $EUID -ne 0 ]]; then
+  echo -e "[VPN] Connecting Uni Bremen VPN\n"
+  exec sudo "$0" "$@"
+fi
+
+# -------------------------------------------------------
+# CHECK PASSWORD FILE
+# -------------------------------------------------------
+if [[ ! -r "$PASS_FILE" ]]; then
+  echo -e "${RED}Password file not readable: $PASS_FILE${RESET}" >&2
+  exit 1
+fi
+
+echo
+echo "Gateway:    $GATEWAY"
+echo "User:       $USERNAME"
+echo "Password:   $PASS_FILE"
+echo
+
+# -------------------------------------------------------
+# OPENCONNECT
+# -------------------------------------------------------
+if cat "$PASS_FILE" | openconnect \
+      --protocol=anyconnect \
+      --background \
+      --user="$USERNAME" \
+      --authgroup="$AUTHGROUP" \
+      --passwd-on-stdin \
+      "$GATEWAY"
+then
+  echo
+  echo -e "${GREEN}[VPN] Connected successfully as $USERNAME${RESET}"
+  echo
+  STATUS=0
+else
+  echo
+  echo -e "${RED}[VPN] Connection FAILED${RESET}"
+  echo
+  STATUS=1
+fi
+
+exit $STATUS

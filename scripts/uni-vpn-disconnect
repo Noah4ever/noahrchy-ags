@@ -1,0 +1,22 @@
+#!/bin/bash
+set -euo pipefail
+
+RED="\e[31m"
+GREEN="\e[32m"
+RESET="\e[0m"
+
+if [[ $EUID -ne 0 ]]; then
+  echo -e "[VPN] Disconnecting Uni Bremen VPN\n"
+
+  exec sudo "$0" "$@"
+fi
+
+echo
+
+if pkill -f "openconnect"; then
+  echo -e "${GREEN}[VPN] Disconnected${RESET}"
+  exit 0
+else
+  echo -e "${RED}[VPN] No openconnect process found${RESET}"
+  exit 1
+fi
